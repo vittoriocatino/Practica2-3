@@ -1,0 +1,48 @@
+name: Email Notification on Push
+
+on:
+  push:
+    branches:
+      - main
+      - feature_a
+      - feature_b
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Get commit information
+        id: commit_info
+        run: |
+          echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+          echo "COMMIT_AUTHOR=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+          echo "COMMIT_SHA=$(git log -1 --pretty=%H)" >> $GITHUB_OUTPUT
+          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+      
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Cambios subidos a rama ${{ steps.commit_info.outputs.BRANCH_NAME }}"
+          to: catinovit@gmail.com
+          from: ${{ secrets.EMAIL_USERNAME }}
+          body: |
+            Se han detectado cambios en el repositorio Practica2-3
+            
+            📋 Detalles del commit:
+            - Rama: ${{ steps.commit_info.outputs.BRANCH_NAME }}
+            - Autor: ${{ steps.commit_info.outputs.COMMIT_AUTHOR }}
+            - Mensaje: ${{ steps.commit_info.outputs.COMMIT_MESSAGE }}
+            - SHA: ${{ steps.commit_info.outputs.COMMIT_SHA }}
+            
+            🔗 Ver cambios: https://github.com/${{ github.repository }}/commit/${{ steps.commit_info.outputs.COMMIT_SHA }}
+            
+            Este correo fue enviado automáticamente por GitHub Actions.
+          priority: normal
